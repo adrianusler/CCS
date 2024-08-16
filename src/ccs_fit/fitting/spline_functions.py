@@ -68,30 +68,18 @@ class Twobody:
         # IN MAIN Rmin IS ADJUSTED THIS WAY, WE THEREFORE BUILD "UPWARDS" FROM Rmin.
         self.N_full = self.N
         self.Rcut = self.Rmin + (self.N - 1) * self.res
-        self.rn_full = [(i) * self.res + self.Rmin for i in range(self.N)]
+        self.rn_full = np.linspace(self.Rmin, self.Rcut, self.N)
         self.rn = self.rn_full
-        if not range_center:
-            self.range_center = (Rmin+self.Rcut)/2
-        else:
-            self.range_center = range_center
-        if not range_width:
-            self.range_width = (self.Rcut-Rmin)
-        else:
-            self.range_width = range_width
-        if not search_points:
-            self.search_points = np.arange(Rmin, self.Rcut, self.res)
-        else:
-            self.search_points = search_points
+        self.range_center = range_center if range_center  else (Rmin+self.Rcut)/2
+        self.range_width = range_width if range_width  else (self.Rcut-Rmin)
+        self.search_points = search_points if search_points  else np.arange(Rmin, self.Rcut, self.res)
         self.Swtype = Swtype
         self.const_type = const_type
         self.search_mode = search_mode
-        self.range_center = range_center
-        self.range_width = range_width
-        self.search_points = search_points
         self.dismat = dismat
-        self.Nconfs = np.shape(dismat)[0]
+        self.Nconfs = dismat.shape[0]
         self.distmat_forces = distmat_forces
-        self.Nconfs_forces = np.shape(distmat_forces)[0]
+        self.Nconfs_forces = distmat_forces.shape[0]
         self.C, self.D, self.B, self.A = self.spline_construction()
         self.vv, self.indices = self.get_v()
         self.const = self.get_const()
@@ -112,7 +100,7 @@ class Twobody:
     def merge_intervals(self):
         self.indices.sort()
         self.N = len(self.indices)
-        self.rn = [self.rn[i] for i in self.indices]
+        self.rn = self.rn[self.indices]
         self.C, self.D, self.B, self.A = self.spline_construction()
         self.vv, _ = self.get_v()
         self.const = self.get_const()
@@ -124,10 +112,8 @@ class Twobody:
             f"Merging intervals for pair {self.name}; number of intervals reduced from {self.N_full} to {self.N}. ")
 
     def dissolve_interval(self):
-        tmp_curvatures = []
         indices = self.indices
-        for i in range(self.N_full - 1 - indices[-1]):
-            tmp_curvatures.append(0.0)
+        tmp_curvatures = [0.0] * (self.N_full - 1 - indices[-1])
 
         for i in range(self.N - 1, 0, -1):
             l_i = indices[i] - indices[i - 1]
@@ -278,25 +264,20 @@ class Twobody:
         b_values = np.dot(self.B, self.curvatures)
         c_values = np.dot(self.C, self.curvatures)
         d_values = np.dot(self.D, self.curvatures)
-        r_values = self.rn
+        r_values = np.array(self.rn)
+        dr_values = r_values[1:]-r_values[:-1]
 
-        spl = []
-        for i in range(self.N-1):
-            a_r = a_values[i]
-            b_r = b_values[i]
-            c_r = c_values[i]
-            d_r = d_values[i]
-            dr = (r_values[i+1]-r_values[i])
-            a_l = a_r - b_r*dr + (c_r/2.)*dr**2 - (d_r/6.)*dr**3
-            b_l = b_r - c_r*dr + (3*d_r/6.)*dr**2
-            c_l = c_r - d_r*dr
-            d_l = d_r
-            c_l = (1/2.)*c_l
-            d_l = (1/6.)*d_l
-            spl.append([float(a_l), float(b_l), float(c_l), float(d_l)])
-        spl = np.array(spl)
+        a_l_values = a_values - b_values*dr_values + (c_values/2.)*dr_values**2 - (d_values/6.)*dr_values**3
+        b_l_values = b_values - c_values*dr_values + (d_values/2.)*dr_values**2
+        c_l_values = (c_values - d_values*dr_values)/2.
+        d_l_values = d_values/6.
 
-        self.splcoeffs = spl
+        self.splcoeffs = np.array([
+            a_l_values[:self.N-1],
+            b_l_values[:self.N-1],
+            c_l_values[:self.N-1],
+            d_l_values[:self.N-1]
+        ]).T
 
     def get_expcoeffs(self):
         """Calculates coefficients of exponential function.
