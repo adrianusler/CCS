@@ -133,12 +133,7 @@ class Twobody:
 
     def get_const(self):
         a = -1 * np.identity(self.N)
-        g_mono = -1 * np.identity(self.N)
-        g_mono[0, 0] = -1
-        g_mono[0, 1] = 1
-        for ii in range(1, self.N - 1):
-            g_mono[ii, ii] = -1
-            g_mono[ii, ii+1] = 1
+        g_mono = np.diag([-1]*self.N) + np.diag([1]*(self.N-1), k=1)
         gg = block_diag(g_mono)
         if self.const_type.lower() == 'mono':
             return gg
@@ -155,7 +150,7 @@ class Twobody:
 
     def spline_construction(self):
         """This function constructs the matrices A, B, C, D."""
-        dx = np.array([self.rn[i]-self.rn[i-1] for i in range(1, self.N)])
+        dx = self.rn[1:]-self.rn[:-1]
         # dx = np.insert(dx, 0, self.res)
 
         rows = self.N - 1
