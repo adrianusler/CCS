@@ -58,22 +58,12 @@ class Objective:
         # print(self.sto, self.sto_full)
 
         self.energy_ref = energy_ref
-        self.force_ref_x = [x[0] for x in force_ref]
-        self.force_ref_y = [y[1] for y in force_ref]
-        self.force_ref_z = [z[2] for z in force_ref]
-        self.force_ref = np.array(
-            [*self.force_ref_x, *self.force_ref_y, *self.force_ref_z]
-        )
+        self.force_ref = np.array(force_ref).T.flatten()
         self.ref = np.hstack((self.energy_ref, self.force_ref)) # If you want to change the weighting of the forces, you can do so here! [TJAMS]
 
         # WHY DO I NEED TO FLATTEN?
         self.ewald_energy = np.array(energy_ewald).reshape(-1, 1).flatten()
-        self.force_ewald_x = [x[0] for x in force_ewald]
-        self.force_ewald_y = [y[1] for y in force_ewald]
-        self.force_ewald_z = [z[2] for z in force_ewald]
-        self.force_ewald = np.array(
-            [*self.force_ewald_x, *self.force_ewald_y, *self.force_ewald_z]
-        )
+        self.force_ewald = np.array(force_ewald).T.flatten()
 
         # WHY DO I NEED TO FLATTEN?
         self.ewald = np.hstack((self.ewald_energy, self.force_ewald)).flatten()
@@ -394,41 +384,33 @@ class Objective:
         """
 
         # Add energy data
-        tmp = []
-        for ii in range(self.np):
-            tmp.append(self.l_twb[ii].vv)
+        tmp = [self.l_twb[ii].vv for ii in range(self.np)]
         vv = np.hstack([*tmp])
         mm = np.hstack((vv, self.sto))
 
         # Add force data
-        tmp = []
-        for ii in range(self.np):
-            tmp.append(self.l_twb[ii].fvv_x)
+        tmp = [self.l_twb[ii].fvv_x for ii in range(self.np)]
         fvv_x = np.hstack([*tmp])
         fvv_x = np.hstack(
             (fvv_x, np.zeros(
-                (self.l_twb[ii].Nconfs_forces, np.shape(self.sto)[1])))
+                (self.l_twb[self.np-1].Nconfs_forces, np.shape(self.sto)[1])))
         )
         ### This is where one could scale the forces by a scalar, do for x, y and z! Don't forget to also scale the target forces! [TJAMS]
         mm = np.vstack((mm, fvv_x))
 
-        tmp = []
-        for ii in range(self.np):
-            tmp.append(self.l_twb[ii].fvv_y)
+        tmp = [self.l_twb[ii].fvv_y for ii in range(self.np)]
         fvv_y = np.hstack([*tmp])
         fvv_y = np.hstack(
             (fvv_y, np.zeros(
-                (self.l_twb[ii].Nconfs_forces, np.shape(self.sto)[1])))
+                (self.l_twb[self.np-1].Nconfs_forces, np.shape(self.sto)[1])))
         )
         mm = np.vstack((mm, fvv_y))
 
-        tmp = []
-        for ii in range(self.np):
-            tmp.append(self.l_twb[ii].fvv_z)
+        tmp = [self.l_twb[ii].fvv_z for ii in range(self.np)]
         fvv_z = np.hstack([*tmp])
         fvv_z = np.hstack(
             (fvv_z, np.zeros(
-                (self.l_twb[ii].Nconfs_forces, np.shape(self.sto)[1])))
+                (self.l_twb[self.np-1].Nconfs_forces, np.shape(self.sto)[1])))
         )
         mm = np.vstack((mm, fvv_z))
 
@@ -452,9 +434,7 @@ class Objective:
         """
 
         aa = np.zeros(0)
-        tmp = []
-        for elem in range(self.np):
-            tmp.append(self.l_twb[elem].switch_const(n_switch[elem]))
+        tmp = [self.l_twb[elem].switch_const(n_switch[elem]) for elem in range(self.np)]
         gg = block_diag(*tmp)
 
         gg = block_diag(gg, np.zeros_like(np.eye(self.cols_sto)))
