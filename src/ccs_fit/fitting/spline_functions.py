@@ -120,9 +120,8 @@ class Twobody:
             c_i = self.curvatures[i][0]
             c_i_minus_1 = self.curvatures[i - 1][0]
             d_i = (c_i - c_i_minus_1) / (l_i)
-            for j in range(l_i):
-                c_tmp = c_i - j * d_i
-                tmp_curvatures.append(c_tmp)
+            c_tmp_list = [c_i - j * d_i for j in range(l_i)]
+            tmp_curvatures += c_tmp_list
         tmp_curvatures.append(*self.curvatures[0])
         tmp_curvatures.reverse()
 
@@ -230,24 +229,25 @@ class Twobody:
             uu_x = 0
             uu_y = 0
             uu_z = 0
-            for rv in self.distmat_forces[config, :]:
-                rr = np.linalg.norm(rv)
-                if rr > 0 and rr < self.Rcut:
-                    index = bisect.bisect_left(self.rn, rr)
-                    delta = (rr - self.rn[index])
-                    indices.append(index)
-                    # INDEX IS SHIFTED IN A,B,C,D
-                    # THIS IS BECAUSE OF THE A,B,C, and D matrix being (N-1)xN
-                    # NOTE THAT FORCE IS NOT NEGATIVE OF DERIVATIVE SINCE
-                    # WE ARE "MOVING" FROM END OF INTERVAL INWARDS!!!
-                    index = index - 1
-                    bb_ind = self.B[index]
-                    dd_ind = self.D[index] * np.power(delta, 2) / 2.0
-                    c_d = self.C[index] * delta
-                    c_force = bb_ind + c_d + dd_ind
-                    uu_x = uu_x + c_force * rv[0] / rr
-                    uu_y = uu_y + c_force * rv[1] / rr
-                    uu_z = uu_z + c_force * rv[2] / rr
+            rr_array = np.linalg.norm(self.distmat_forces[config], axis=1)
+            for rv, rr in zip(self.distmat_forces[config, :], rr_array):
+                if rr < 0 or rr > self.Rcut:
+                    continue
+                index = bisect.bisect_left(self.rn, rr)
+                delta = (rr - self.rn[index])
+                indices.append(index)
+                # INDEX IS SHIFTED IN A,B,C,D
+                # THIS IS BECAUSE OF THE A,B,C, and D matrix being (N-1)xN
+                # NOTE THAT FORCE IS NOT NEGATIVE OF DERIVATIVE SINCE
+                # WE ARE "MOVING" FROM END OF INTERVAL INWARDS!!!
+                index = index - 1
+                bb_ind = self.B[index]
+                dd_ind = self.D[index] * np.power(delta, 2) / 2.0
+                c_d = self.C[index] * delta
+                c_force = bb_ind + c_d + dd_ind
+                uu_x = uu_x + c_force * rv[0] / rr
+                uu_y = uu_y + c_force * rv[1] / rr
+                uu_z = uu_z + c_force * rv[2] / rr
 
             vv_x[config, :] = uu_x
             vv_y[config, :] = uu_y
