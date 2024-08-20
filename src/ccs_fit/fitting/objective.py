@@ -148,7 +148,7 @@ class Objective:
             self.unconstrained_fit()
 
         if self.do_ridge_regression == "True":
-            self.ridge_regresssion()
+            self.ridge_regression()
 
         for n_switch_id in tqdm(
             nswitch_list, desc="    Finding optimum switch", colour="#800080"
@@ -596,7 +596,7 @@ class Objective:
         except:
             pass
 
-    def ridge_regresssion(self):
+    def ridge_regression(self):
         #Solving ridge regression problem
 
         from sklearn import linear_model

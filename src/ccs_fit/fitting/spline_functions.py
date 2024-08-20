@@ -28,7 +28,7 @@ class Twobody:
     def __init__(
         self,
         name,
-        dismat,
+        distmat,
         distmat_forces,
         Rcut,
         range_center=None,
@@ -47,7 +47,7 @@ class Twobody:
         -----
             name : str
                 name of the atom pair.
-            dismat : dataframe
+            distmat : dataframe
                 pairwise  distance matrix.
             nconfigs : int
                 number of configurations
@@ -76,8 +76,8 @@ class Twobody:
         self.Swtype = Swtype
         self.const_type = const_type
         self.search_mode = search_mode
-        self.dismat = dismat
-        self.Nconfs = dismat.shape[0]
+        self.distmat = distmat
+        self.Nconfs = distmat.shape[0]
         self.distmat_forces = distmat_forces
         self.Nconfs_forces = distmat_forces.shape[0]
         self.C, self.D, self.B, self.A = self.spline_construction()
@@ -192,7 +192,7 @@ class Twobody:
         indices = [0]
         for config in range(self.Nconfs):
             distances = [
-                ii for ii in self.dismat[config, :] if self.Rmin <= ii <= self.Rcut
+                ii for ii in self.distmat[config, :] if self.Rmin <= ii <= self.Rcut
             ]
             uu = 0
             for rr in distances:
