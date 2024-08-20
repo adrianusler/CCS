@@ -552,8 +552,7 @@ class Objective:
 
     def unconstrained_fit(self):
         #Solving unconstrained problem
-        xx=np.linalg.lstsq(self.mm,self.ref,rcond=None)
-        xx=xx[0]
+        xx=np.linalg.lstsq(self.mm,self.ref,rcond=None)[0]
         print("    MSE of unconstrained problem is: ", ((self.mm.dot(xx)   - self.ref)**2).mean()    )
         xx=xx.reshape(len(xx),1)
         self.assign_parameter_values(xx)
@@ -582,10 +581,8 @@ class Objective:
                 (x_unfolded, np.array(self.l_twb[ii].curvatures).flatten())
             )
         for onb in self.l_one:
-            if onb.epsilon_supported:
-                x_unfolded = np.hstack((x_unfolded, np.array(onb.epsilon)))
-            else:
-                x_unfolded = np.hstack((x_unfolded, 0.0))
+            onb_epsilon = np.array(onb.epsilon) if onb.epsilon_supported else 0.0
+            x_unfolded = np.hstack((x_unfolded, onb_epsilon))
         xx = x_unfolded
 
         self.write_CCS_params(fname="UNC_params.json")
